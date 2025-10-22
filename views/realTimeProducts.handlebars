@@ -1,0 +1,69 @@
+<h1> Productos en Tiempo Real</h1>
+
+<!-- Lista de productos -->
+<ul id="productList">
+  {{#each products}}
+    <li data-id="{{this.id}}">
+      <strong>{{this.title}}</strong> - ${{this.price}}
+      <button class="delete-btn" data-id="{{this.id}}">Eliminar</button>
+    </li>
+  {{/each}}
+</ul>
+
+<hr>
+
+<!-- Formulario para agregar productos -->
+<h3>Agregar producto</h3>
+<form id="productForm">
+  <input type="text" id="title" placeholder="Título" required />
+  <input type="number" id="price" placeholder="Precio" required />
+  <button type="submit">Agregar</button>
+</form>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  const productList = document.getElementById("productList");
+  const productForm = document.getElementById("productForm");
+
+  // Función para renderizar productos
+  function renderProducts(products) {
+    productList.innerHTML = "";
+
+    products.forEach(p => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <strong>${p.title}</strong> - $${p.price}
+        <button class="delete-btn" data-id="${p.id}">Eliminar</button>
+      `;
+      productList.appendChild(li);
+    });
+
+ 
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.id; 
+        console.log("Enviando solicitud de borrado:", id);
+        socket.emit("deleteProduct", id);
+      });
+    });
+  }
+
+  
+  socket.on("products", renderProducts);
+
+  // Enviar nuevo producto
+  productForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const title = document.getElementById("title").value.trim();
+    const price = parseFloat(document.getElementById("price").value);
+
+    if (!title || isNaN(price)) return;
+
+    socket.emit("addProduct", { title, price });
+    productForm.reset();
+  });
+</script>
+
+
+

@@ -1,54 +1,40 @@
-const fs = require("fs").promises;
-const path = require("path");
+import FileManager from "./FileManager.js";
 
-class CartManager {
-  constructor(filename = "carts.json") {
-    this.path = path.resolve(__dirname, "../../data", filename);
+export default class CartManager extends FileManager {
+  constructor(path, productManager) {
+    super(path);
+    this.productManager = productManager;
   }
 
-  async _readFile() {
-    try {
-      const content = await fs.readFile(this.path, "utf8");
-      return JSON.parse(content || "[]");
-    } catch (err) {
-      if (err.code === "ENOENT") {
-        await this._writeFile([]);
-        return [];
-      }
-      throw err;
-    }
+  async getCarts() {
+    return await this._readFile();
   }
 
-  async _writeFile(data) {
-    await fs.mkdir(path.dirname(this.path), { recursive: true });
-    await fs.writeFile(this.path, JSON.stringify(data, null, 2), "utf8");
-  }
-
-  _generateId() {
-    return `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  async getCartById(id) {
+    const carts = await this._readFile();
+    return carts.find(c => c.id === id);
   }
 
   async createCart() {
     const carts = await this._readFile();
-    const newCart = { id: this._generateId(), products: [] };
+    const newCart = { id: this._generateId(carts), products: [] };
     carts.push(newCart);
     await this._writeFile(carts);
     return newCart;
   }
 
-  async getCartById(id) {
-    const carts = await this._readFile();
-    return carts.find(c => String(c.id) === String(id)) || null;
-  }
-
   async addProductToCart(cartId, productId) {
     const carts = await this._readFile();
-    const cart = carts.find(c => String(c.id) === String(cartId));
-    if (!cart) return null;
+    const cart = carts.find(c => c.id === cartId);
+    if (!cart) throw new Error("Carrito no encontrado");
 
-    const existing = cart.products.find(p => String(p.product) === String(productId));
+    //  Verificar si el producto existe antes de agregarlo
+    const product = await this.productManager.getProductById(productId);
+    if (!product) throw new Error("Producto no encontrado");
+
+    const existing = cart.products.find(p => p.product === productId);
     if (existing) {
-      existing.quantity += 1;
+      existing.quantity++;
     } else {
       cart.products.push({ product: productId, quantity: 1 });
     }
@@ -58,4 +44,3 @@ class CartManager {
   }
 }
 
-module.exports = CartManager;
