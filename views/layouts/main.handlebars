@@ -1,10 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Tienda de Bajos </title>
-</head>
-<body>
-  {{{body}}}  
-</body>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tienda de Bajos</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Tienda de Bajos</h1>
+      <nav>
+        <a href="/">Inicio</a>
+        <a href="/products">Productos</a>
+        <a href="/realtimeproducts">Tiempo real</a>
+        <a href="#" id="goCart">Mi carrito</a>
+
+     
+      </nav>
+    </header>
+
+    <main>
+      {{{body}}}
+    </main>
+
+    <footer>
+      <p>© {{year}} Tienda de Bajos - Proyecto Backend</p>
+    </footer>
+    <script>
+  document.getElementById("goCart").addEventListener("click", () => {
+    const cartId = localStorage.getItem("cartId");
+    if (!cartId) {
+      alert("⚠️ Todavía no tenés un carrito. Agregá un producto primero.");
+      return;
+    }
+    window.location.href = `/carts/${cartId}`;
+  });
+</script>
+
+  </body>
 </html>
+
+
+

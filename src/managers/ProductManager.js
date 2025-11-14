@@ -11,12 +11,15 @@ export default class ProductManager extends FileManager {
 
   async getProductById(id) {
     const products = await this._readFile();
-    return products.find(p => String(p.id) === String(id));
+    return products.find(p => p.id == id);
   }
 
   async addProduct(productData) {
+    const { title, price } = productData;
+    if (!title || !price) throw new Error("Faltan campos obligatorios");
+
     const products = await this._readFile();
-    const newProduct = { id: this._generateId(products), ...productData };
+    const newProduct = { id: Date.now().toString(), ...productData };
     products.push(newProduct);
     await this._writeFile(products);
     return newProduct;
@@ -24,7 +27,7 @@ export default class ProductManager extends FileManager {
 
   async updateProduct(id, updateData) {
     const products = await this._readFile();
-    const index = products.findIndex(p => String(p.id) === String(id));
+    const index = products.findIndex(p => p.id == id);
     if (index === -1) return null;
 
     products[index] = { ...products[index], ...updateData };
@@ -34,13 +37,12 @@ export default class ProductManager extends FileManager {
 
   async deleteProduct(id) {
     const products = await this._readFile();
-    const filtered = products.filter(p => String(p.id) !== String(id));
+    const filtered = products.filter(p => p.id != id);
     await this._writeFile(filtered);
-    const deleted = products.length !== filtered.length;
-    console.log(deleted ? `✅ Producto ${id} eliminado` : `⚠️ No se encontró producto ${id}`);
-    return deleted;
+    return products.length !== filtered.length;
   }
 }
+
 
 
 

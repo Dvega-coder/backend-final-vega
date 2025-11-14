@@ -1,0 +1,72 @@
+<h1>🎸 Productos disponibles</h1>
+
+<section class="product-grid">
+  {{#each products}}
+    <article class="product-card" data-id="{{this._id}}">
+      <h3>{{this.title}}</h3>
+      <p><strong>Precio:</strong> ${{this.price}}</p>
+
+      {{#if this.category}}
+        <p><strong>Categoría:</strong> {{this.category}}</p>
+      {{/if}}
+
+      {{#if this.stock}}
+        <p><strong>Stock:</strong> {{this.stock}}</p>
+      {{/if}}
+
+      <!-- 🔍 Link a vista detalle -->
+      <a href="/products/{{this._id}}" class="btn-detail">
+        🔎 Ver detalles
+      </a>
+
+      <!-- 🔢 Selector de cantidad -->
+      <div class="qty-box">
+        <label for="qty-{{this._id}}">Cantidad:</label>
+        <input
+          id="qty-{{this._id}}"
+          type="number"
+          class="qty-input"
+          value="1"
+          min="1"
+        />
+      </div>
+
+      <button class="add-to-cart">🛒 Agregar al carrito</button>
+    </article>
+  {{/each}}
+
+  {{#unless products.length}}
+    <p>No hay productos disponibles.</p>
+  {{/unless}}
+</section>
+
+<!-- 🔽 Paginación con sort + query preservados -->
+<nav class="pagination">
+  {{#if hasPrevPage}}
+    <a 
+      href="/products?page={{prevPage}}&limit={{limit}}&sort={{sort}}&query={{query}}"
+      class="btn"
+    >
+      ⬅️ Anterior
+    </a>
+  {{/if}}
+
+  <span>Página {{page}} de {{totalPages}}</span>
+
+  {{#if hasNextPage}}
+    <a 
+      href="/products?page={{nextPage}}&limit={{limit}}&sort={{sort}}&query={{query}}"
+      class="btn"
+    >
+      Siguiente ➡️
+    </a>
+  {{/if}}
+</nav>
+
+<script src="/js/products.js"></script>
+
+
+
+
+
+

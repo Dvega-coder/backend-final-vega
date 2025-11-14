@@ -1,6 +1,8 @@
-
-
-
+// ✅ src/server.js
+import dotenv from "dotenv";
+dotenv.config();
+import connectDB from "./config/db.js";
+await connectDB();
 
 import express from "express";
 import { createServer } from "http";
@@ -8,104 +10,91 @@ import { Server } from "socket.io";
 import { engine } from "express-handlebars";
 import path from "path";
 import { fileURLToPath } from "url";
-import ProductManager from "./managers/ProductManager.js";
-import CartManager from "./managers/CartManager.js";
 
+// --- Modelos (para socket.io) ---
+import { ProductModel } from "./models/product.model.js";
+
+// --- Routers ---
+import productsRouterFactory from "./routes/products.routes.js";
+import cartsRouter from "./routes/carts.routes.js";
+import viewsRouter from "./routes/views.router.js";
+
+// --- Configuración de paths ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// --- Configuración base ---
 const app = express();
 const server = createServer(app);
 const io = new Server(server);
-const PORT = 8080;
 
-// ----------------- CONFIGURACIÓN -----------------
-app.engine("handlebars", engine());
-app.set("view engine", "handlebars");
-app.set("views", path.join(__dirname, "../views"));
-
+// --- Middlewares ---
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "../public")));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "..", "public")));
 
-// ----------------- INSTANCIAS -----------------
-const productManager = new ProductManager("./data/products.json");
-const cartManager = new CartManager("./data/carts.json", productManager);
+// --- Configuración de Handlebars ---
+app.engine(
+  "handlebars",
+  engine({
+    defaultLayout: "main",
+    layoutsDir: path.join(__dirname, "..", "views", "layouts"),
+    helpers: {
+      // Operadores lógicos y de comparación
+      eq: (a, b) => a === b,
+      ne: (a, b) => a !== b,
+      lt: (a, b) => a < b,
+      gt: (a, b) => a > b,
+      lte: (a, b) => a <= b,
+      gte: (a, b) => a >= b,
+      and: (a, b) => a && b,
+      or: (a, b) => a || b,
 
-// ----------------- VISTAS HANDLEBARS -----------------
-app.get("/", async (req, res) => {
-  const products = await productManager.getProducts();
-  res.render("home", { products });
-});
+      // Helpers matemáticos para carrito
+      multiply: (a, b) => a * b,
+      total: (products) =>
+        products.reduce((acc, p) => acc + p.product.price * p.quantity, 0),
 
-app.get("/realtimeproducts", async (req, res) => {
-  const products = await productManager.getProducts();
-  res.render("realTimeProducts", { products });
-});
+      // Año dinámico para footer
+      year: () => new Date().getFullYear(),
+    },
+  })
+);
+app.set("view engine", "handlebars");
+app.set("views", path.join(__dirname, "..", "views"));
 
-// ----------------- SOCKET.IO -----------------
+// --- Rutas principales ---
+app.use("/", viewsRouter);
+app.use("/api/products", productsRouterFactory(io));
+app.use("/api/carts", cartsRouter);
+
+// --- WebSockets: productos en tiempo real ---
 io.on("connection", async (socket) => {
-  console.log("🟢 Cliente conectado");
+  console.log("🟢 Cliente conectado:", socket.id);
 
-  // Enviar lista inicial
-  socket.emit("products", await productManager.getProducts());
+  // Enviar lista inicial de productos
+  const products = await ProductModel.find().lean();
+  socket.emit("products", products);
 
-  // Agregar producto
-  socket.on("addProduct", async (data) => {
-    await productManager.addProduct(data);
-    io.emit("products", await productManager.getProducts());
-  });
-
-  // Eliminar producto
-  socket.on("deleteProduct", async (id) => {
-    console.log("🗑️ Solicitud de eliminar producto con id:", id);
-
-    const deleted = await productManager.deleteProduct(id);
-    if (!deleted) {
-      console.warn(`⚠️ No se encontró producto con id ${id}`);
-      return;
-    }
-
-    console.log(`✅ Producto ${id} eliminado correctamente`);
-    io.emit("products", await productManager.getProducts());
+  // Actualizar productos cuando cambie algo
+  socket.on("refreshProducts", async () => {
+    const updated = await ProductModel.find().lean();
+    io.emit("products", updated);
   });
 
   socket.on("disconnect", () => {
-    console.log("🔴 Cliente desconectado");
+    console.log("🔴 Cliente desconectado:", socket.id);
   });
 });
 
-// ----------------- API REST -----------------
-app.get("/api/products", async (req, res) => {
-  try {
-    const products = await productManager.getProducts();
-    res.json(products);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+// --- Iniciar servidor ---
+const PORT = process.env.PORT || 8080;
+server.listen(PORT, () => {
+  console.log("✅ Conectado a MongoDB");
+  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
 });
 
-app.post("/api/products", async (req, res) => {
-  try {
-    const newProduct = await productManager.addProduct(req.body);
-    io.emit("products", await productManager.getProducts());
-    res.status(201).json(newProduct);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
 
-app.delete("/api/products/:pid", async (req, res) => {
-  try {
-    const pid = req.params.pid; 
-    const deleted = await productManager.deleteProduct(pid);
-    if (!deleted) return res.status(404).json({ error: "Producto no encontrado" });
 
-    io.emit("products", await productManager.getProducts());
-    res.json({ message: "Producto eliminado" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
-// ----------------- INICIO DEL SERVIDOR -----------------
-server.listen(PORT, () => console.log(`🚀 Servidor iniciado en puerto ${PORT}`));
+

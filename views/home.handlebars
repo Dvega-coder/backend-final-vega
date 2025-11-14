@@ -1,7 +1,21 @@
-<h1>Lista de productos</h1>
-<ul>
+<h2>Bienvenido a la Tienda de Bajos</h2>
+
+<p>Explorá nuestro catálogo completo de instrumentos y accesorios. Usá los filtros por categoría, precio o disponibilidad.</p>
+
+<a class="btn" href="/products">Ver todos los productos</a>
+
+<hr>
+
+<h3>Productos destacados</h3>
+
+<ul class="product-list">
   {{#each products}}
-    <li>{{this.id}} - {{this.title}} - ${{this.price}}</li>
+    <li class="product-item">
+      <div class="pi-name">{{this.title}}</div>
+      <div class="pi-price">💵 ${{this.price}}</div>
+      <a href="/products/{{this._id}}" class="detail-btn">Ver detalle</a>
+    </li>
   {{/each}}
 </ul>
+
 

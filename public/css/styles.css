@@ -1,0 +1,389 @@
+
+
+
+
+/* ===================================================== */
+/*                      VARIABLES                        */
+/* ===================================================== */
+
+:root {
+  --bg: #0d0d0d;
+  --text: #fcefd1;
+  --card-bg: #1a1a1a;
+  --card-border: #d1a954;
+  --card-hover: #222;
+  --accent: #d1a954;
+  --accent2: #c62828;
+  --footer-bg: #000;
+  --link: #d1a954;
+  --link-hover: #f7d791;
+}
+
+/* ===================================================== */
+/*                      GLOBAL                           */
+/* ===================================================== */
+
+body {
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0;
+}
+
+/* ===================================================== */
+/*                      HEADER                           */
+/* ===================================================== */
+
+header {
+  background: linear-gradient(135deg, #000 0%, #272727 100%);
+  color: var(--accent);
+  text-align: center;
+  padding: 2rem 1rem;
+  border-bottom: 4px solid var(--accent);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+header h1 {
+  font-size: 2.6rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 700;
+  margin-bottom: .5rem;
+  text-shadow: 0 0 10px rgba(209,169,84,0.5);
+}
+
+nav a {
+  color: var(--accent);
+  text-decoration: none;
+  margin: 0 1rem;
+  font-size: 1.1rem;
+  padding-bottom: 3px;
+  border-bottom: 2px solid transparent;
+  transition: color .3s, border-bottom .3s;
+}
+
+nav a:hover {
+  color: var(--accent2);
+  border-bottom: 2px solid var(--accent2);
+}
+
+/* ===================================================== */
+/*                        MAIN                           */
+/* ===================================================== */
+
+main {
+  max-width: 1100px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #111;
+  border-radius: 12px;
+  border: 2px solid var(--accent);
+  box-shadow:
+    0 0 15px rgba(209,169,84,0.2),
+    0 0 40px rgba(198,40,40,0.15);
+  animation: fadeIn .4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===================================================== */
+/*                   PRODUCT CARDS                       */
+/* ===================================================== */
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.8rem;
+}
+
+.product-card {
+  background: var(--card-bg);
+  padding: 1rem;
+  border-radius: 10px;
+  border: 2px solid var(--card-border);
+  box-shadow:
+    0 0 10px rgba(209,169,84,0.15),
+    0 0 20px rgba(0,0,0,0.6);
+  transition: all .25s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 320px;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  background: var(--card-hover);
+  box-shadow:
+    0 0 15px rgba(209,169,84,0.3),
+    0 0 30px rgba(0,0,0,0.9);
+}
+
+/* CENTRAR parte superior */
+.product-card h3 {
+  margin-bottom: 0.5rem;
+}
+
+/* ===================================================== */
+/*                 INPUT DE CANTIDAD                     */
+/* ===================================================== */
+
+.qty-input {
+  width: 60px !important;
+  padding: 0.35rem;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #0f0f0f;
+  color: var(--text);
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* Botón Add-to-Cart abajo fijo */
+.add-to-cart-btn {
+  margin-top: auto;
+  width: 100%;
+  text-align: center;
+}
+
+/* ===================================================== */
+/*                HOME – PRODUCT LIST          */
+/* ===================================================== */
+
+.product-list {
+  list-style: none;
+  padding: 0;
+}
+
+.product-item {
+  background: #1a1a1a;
+  margin: 0.6rem 0;
+  padding: 1rem 1.2rem;
+  border-radius: 6px;
+  border-left: 4px solid var(--accent);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  align-items: flex-start;
+  transition: background 0.2s ease;
+}
+
+.product-item:hover {
+  background: #222;
+}
+
+.pi-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.1rem;
+  color: var(--text);
+}
+
+.pi-price {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.detail-btn {
+  margin-top: 0.4rem;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent) 0%, #b89245 100%);
+  padding: 0.45rem 0.9rem;
+  border-radius: 6px;
+  color: #000 !important;
+  text-decoration: none;
+  border: 2px solid #000;
+  transition: all 0.2s ease;
+}
+
+.detail-btn:hover {
+  background: var(--accent2);
+  color: #fff !important;
+  border-color: #fff;
+}
+
+
+/* ===================================================== */
+/*          REALTIME PRODUCTS –       */
+/* ===================================================== */
+
+.rt-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 1rem;
+}
+
+.rt-item {
+  background: #1a1a1a;
+  margin: 0.6rem 0;
+  padding: 1rem 1.2rem;
+  border-radius: 6px;
+  border-left: 4px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* ✨ ALINEACIÓN PERFECTA */
+  gap: 1rem;
+  transition: background 0.2s ease;
+}
+
+.rt-item:hover {
+  background: #222;
+}
+
+.rt-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.rt-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.rt-info {
+  font-size: 0.95rem;
+  color: var(--accent);
+  font-family: monospace;
+}
+
+/* ✨ Botón estilo Fender dorado */
+.rt-delete-btn {
+  background: linear-gradient(135deg, var(--accent) 0%, #b89245 100%);
+  color: #000;
+  border: 2px solid #000;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all .2s ease;
+  white-space: nowrap;
+}
+
+.rt-delete-btn:hover {
+  background: var(--accent2);
+  color: #fff;
+  border-color: #fff;
+  transform: translateY(-2px);
+}
+
+
+/* ===================================================== */
+/*                        BUTTONS                        */
+/* ===================================================== */
+
+button,
+.btn {
+  background: linear-gradient(135deg, var(--accent) 0%, #b89245 100%);
+  color: #000;
+  border: 2px solid #000;
+  border-radius: 8px;
+  padding: .6rem 1rem;
+  cursor: pointer;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all .2s ease;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.8),
+    inset 0 0 5px rgba(255,255,255,0.1);
+}
+
+button:hover,
+.btn:hover {
+  background: var(--accent2);
+  color: #fff;
+  border-color: #fff;
+  box-shadow:
+    0 0 12px rgba(198,40,40,0.7),
+    inset 0 0 6px rgba(255,255,255,0.3);
+  transform: translateY(-3px);
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
+/* ===================================================== */
+/*                         LINKS                         */
+/* ===================================================== */
+
+a {
+  color: var(--link);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--link-hover);
+  text-shadow: 0 0 6px rgba(209,169,84,0.5);
+}
+
+/* ===================================================== */
+/*                         TABLE                         */
+/* ===================================================== */
+
+.cart-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #1b1b1b;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 20px rgba(209,169,84,0.2);
+}
+
+.cart-table th {
+  background: #2a2a2a;
+  padding: .9rem;
+  border-bottom: 2px solid var(--accent);
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+.cart-table td {
+  padding: .8rem;
+  text-align: center;
+  border-top: 1px solid #333;
+}
+
+.cart-table tr:hover td {
+  background: #222;
+}
+
+.quantity-input {
+  width: 60px;
+  padding: 0.4rem;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #0f0f0f;
+  color: var(--text);
+}
+
+/* ===================================================== */
+/*                        FOOTER                         */
+/* ===================================================== */
+
+footer {
+  background: var(--footer-bg);
+  color: var(--accent);
+  text-align: center;
+  padding: 1.2rem;
+  margin-top: 3rem;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  border-top: 3px solid var(--accent);
+  text-transform: uppercase;
+  text-shadow: 0 0 6px rgba(209,169,84,0.5);
+}
