@@ -1,58 +1,91 @@
-// src/routes/views.router.js
 import { Router } from "express";
-import mongoose from "mongoose";
 import { ProductModel } from "../models/product.model.js";
 import { CartModel } from "../models/cart.model.js";
+import { onlyPublic, onlyPrivate } from "../middlewares/authViews.js";
 
 const router = Router();
 
 // -----------------------------------------
-// 🟢 HOME
+// ROOT inteligente
 // -----------------------------------------
-router.get("/", async (req, res) => {
-  const products = await ProductModel.find().limit(4).lean();
-  res.render("home", { title: "Inicio", products });
+router.get("/", (req, res) => {
+  if (req.user) {
+    return res.redirect("/home");
+  }
+  return res.redirect("/login");
 });
 
 // -----------------------------------------
-// 🟣 LISTADO DE PRODUCTOS (Paginación + Filtros + Sort)
+// LOGIN (solo NO logueados)
+// -----------------------------------------
+router.get("/login", onlyPublic, (req, res) => {
+  res.render("login", {
+    error: req.query.error
+  });
+});
+
+// -----------------------------------------
+// LOGOUT
+// -----------------------------------------
+router.get("/logout", (req, res) => {
+  // JWT es stateless, solo redirigimos
+  res.redirect("/login");
+});
+
+// -----------------------------------------
+// HOME (solo logueados)
+// -----------------------------------------
+router.get("/home", onlyPrivate, async (req, res) => {
+  try {
+    const products = await ProductModel.find().limit(4).lean();
+
+    res.render("home", {
+      title: "Inicio",
+      products,
+      user: req.user
+    });
+  } catch (err) {
+    res.status(500).send("Error al cargar home");
+  }
+});
+
+// -----------------------------------------
+// 👤 CURRENT (solo logueados)
+// -----------------------------------------
+router.get("/current", onlyPrivate, (req, res) => {
+  res.render("current", {
+    user: {
+      first_name: req.user.first_name,
+      last_name: req.user.last_name,
+      email: req.user.email,
+      role: req.user.role
+    }
+  });
+});
+
+// -----------------------------------------
+// 🟣 LISTADO DE PRODUCTOS (pública)
 // -----------------------------------------
 router.get("/products", async (req, res) => {
   try {
     const { limit = 10, page = 1, sort, query } = req.query;
 
-    const lim = Math.max(parseInt(limit, 10) || 10, 1);
-    const pg = Math.max(parseInt(page, 10) || 1, 1);
+    const lim = Math.max(parseInt(limit) || 10, 1);
+    const pg = Math.max(parseInt(page) || 1, 1);
     const skip = (pg - 1) * lim;
 
-    // -----------------------------
-    // 🔍 FILTRO
-    // -----------------------------
     let filter = {};
-
     if (query) {
-      const [key, rawVal] = String(query).split(":");
-
-      if (key === "status" && (rawVal === "true" || rawVal === "false")) {
-        filter.status = rawVal === "true";
-      }
-
-      if (key === "category" && rawVal.trim() !== "") {
-        filter.category = rawVal.trim();
-      }
+      const [key, value] = String(query).split(":");
+      if (key === "status") filter.status = value === "true";
+      if (key === "category") filter.category = value;
     }
 
-    // -----------------------------
-    // 🔽 SORT
-    // -----------------------------
-    let sortOpt = undefined;
-    if (sort === "asc") sortOpt = { price: 1 };
-    if (sort === "desc") sortOpt = { price: -1 };
+    let sortOpt = {};
+    if (sort === "asc") sortOpt.price = 1;
+    if (sort === "desc") sortOpt.price = -1;
 
-    // -----------------------------
-    // 📦 CONSULTA
-    // -----------------------------
-    const items = await ProductModel.find(filter)
+    const products = await ProductModel.find(filter)
       .sort(sortOpt)
       .skip(skip)
       .limit(lim)
@@ -61,78 +94,95 @@ router.get("/products", async (req, res) => {
     const total = await ProductModel.countDocuments(filter);
     const totalPages = Math.max(Math.ceil(total / lim), 1);
 
-    // -----------------------------
-    // 🔗 PAGINACIÓN CORRECTA
-    // -----------------------------
-    const prevPage = pg > 1 ? pg - 1 : null;
-    const nextPage = pg < totalPages ? pg + 1 : null;
-
     res.render("products", {
-      products: items,
+      products,
       page: pg,
       totalPages,
-      hasPrevPage: prevPage !== null,
-      hasNextPage: nextPage !== null,
-      prevPage,
-      nextPage,
+      hasPrevPage: pg > 1,
+      hasNextPage: pg < totalPages,
+      prevPage: pg > 1 ? pg - 1 : null,
+      nextPage: pg < totalPages ? pg + 1 : null,
       query,
       sort,
       limit: lim,
+      user: req.user
     });
 
-  } catch (e) {
-    console.error("❌ Error al cargar productos:", e);
+  } catch (err) {
+    console.error("❌ Error productos:", err);
     res.status(500).send("Error al cargar productos");
   }
 });
 
 // -----------------------------------------
-// 🟡 DETALLE DE PRODUCTO
+// 🟡 DETALLE DE PRODUCTO (pública)
 // -----------------------------------------
 router.get("/products/:pid", async (req, res) => {
   try {
     const product = await ProductModel.findById(req.params.pid).lean();
     if (!product) return res.status(404).send("Producto no encontrado");
 
-    res.render("productDetail", { product });
+    res.render("productDetail", {
+      product,
+      user: req.user
+    });
 
   } catch (err) {
-    res.status(500).send("Error al obtener producto");
+    res.status(500).send("Error al cargar producto");
   }
 });
 
 // -----------------------------------------
-// 🔵 VISTA DE CARRITO
+// 🔵 CARRITO  
 // -----------------------------------------
-router.get("/carts/:cid", async (req, res) => {
-  const { cid } = req.params;
-
-  if (!mongoose.Types.ObjectId.isValid(cid)) {
-    return res.status(400).send("ID de carrito inválido");
-  }
-
+router.get("/cart", async (req, res) => {
   try {
-    const cart = await CartModel.findById(cid).lean();
-    if (!cart) return res.status(404).send("Carrito no encontrado");
+    // 👉 Leer cartId 
+    const cartId = req.query.cartId;
 
-    res.render("cart", { cart });
+    if (!cartId) {
+      return res.render("cart", {
+        cart: { products: [] },
+        user: req.user,
+        cartId: null
+      });
+    }
+
+    const cart = await CartModel.findById(cartId)
+      .populate("products.product")
+      .lean();
+
+    res.render("cart", {
+      cart: cart || { products: [] },
+      user: req.user,
+      cartId: cartId
+    });
 
   } catch (err) {
+    console.error("❌ Error carrito:", err);
     res.status(500).send("Error al obtener carrito");
   }
 });
 
 // -----------------------------------------
-// 🔴 REAL TIME PRODUCTS
+// 🔴 REALTIME PRODUCTS (pública)
 // -----------------------------------------
 router.get("/realtimeproducts", async (req, res) => {
   try {
     const products = await ProductModel.find().lean();
-    res.render("realtimeproducts", { products });
+
+    res.render("realtimeproducts", {
+      products,
+      user: req.user
+    });
 
   } catch (err) {
-    res.status(500).send("Error al cargar productos en tiempo real");
+    res.status(500).send("Error al cargar realtime products");
   }
 });
 
 export default router;
+
+
+
+

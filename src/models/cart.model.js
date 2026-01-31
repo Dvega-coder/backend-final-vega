@@ -1,4 +1,4 @@
-// src/models/cart.model.js
+
 import mongoose from "mongoose";
 
 const cartSchema = new mongoose.Schema({
@@ -19,7 +19,7 @@ const cartSchema = new mongoose.Schema({
   ],
 }, { timestamps: true });
 
-// Auto-populate para todas las consultas que leen carritos
+
 cartSchema.pre(["find", "findOne"], function () {
   this.populate("products.product");
 });

@@ -6,16 +6,22 @@
     <title>Tienda de Bajos</title>
     <link rel="stylesheet" href="/css/styles.css" />
   </head>
+
   <body>
     <header>
       <h1>Tienda de Bajos</h1>
-      <nav>
-        <a href="/">Inicio</a>
-        <a href="/products">Productos</a>
-        <a href="/realtimeproducts">Tiempo real</a>
-        <a href="#" id="goCart">Mi carrito</a>
 
-     
+      <nav>
+        {{#if user}}
+          <a href="/home">Inicio</a>
+          <a href="/products">Productos</a>
+          <a href="/realtimeproducts">Tiempo real</a>
+          <a href="/current">Mi perfil</a>
+          <a href="#" id="goCart">Mi carrito</a>
+          <a href="/logout">Logout</a>
+        {{else}}
+          <a href="/login">Login</a>
+        {{/if}}
       </nav>
     </header>
 
@@ -26,19 +32,31 @@
     <footer>
       <p>© {{year}} Tienda de Bajos - Proyecto Backend</p>
     </footer>
-    <script>
-  document.getElementById("goCart").addEventListener("click", () => {
-    const cartId = localStorage.getItem("cartId");
-    if (!cartId) {
-      alert("⚠️ Todavía no tenés un carrito. Agregá un producto primero.");
-      return;
-    }
-    window.location.href = `/carts/${cartId}`;
-  });
-</script>
 
+    <script>
+      
+      const cartBtn = document.getElementById("goCart");
+      if (cartBtn) {
+        cartBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          const cartId = localStorage.getItem("cartId");
+          if (!cartId) {
+            alert("⚠️ Todavía no tenés un carrito.");
+            return;
+          }
+          
+          window.location.href = `/cart?cartId=${cartId}`;
+        });
+      }
+    </script>
   </body>
 </html>
+
+
+
+
+
+
 
 
 

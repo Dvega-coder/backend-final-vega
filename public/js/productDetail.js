@@ -1,4 +1,4 @@
-// --- public/js/productDetail.js ---
+
 
 // Recuperar o crear carrito
 let CART_ID = localStorage.getItem("cartId");
@@ -24,7 +24,7 @@ async function ensureCart() {
 
 ensureCart();
 
-// 👉 Manejar botón "Agregar al carrito"
+//  botón "Agregar al carrito"
 document.getElementById("addToCart")?.addEventListener("click", async (e) => {
   const productId = e.target.dataset.id;
 

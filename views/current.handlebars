@@ -1,0 +1,20 @@
+<h2>Perfil de usuario</h2>
+
+<ul>
+  <li><strong>Nombre:</strong> {{user.first_name}} {{user.last_name}}</li>
+  <li><strong>Email:</strong> {{user.email}}</li>
+  <li><strong>Rol:</strong> {{user.role}}</li>
+</ul>
+
+{{#if (eq user.role "admin")}}
+  <hr>
+  <h3>Panel de administrador</h3>
+  <p>Tenés permisos para crear, editar y eliminar productos.</p>
+  <a href="/realtimeproducts">Ir a Real Time Products</a>
+{{else}}
+  <hr>
+  <p>Usuario estándar. Acceso solo de lectura.</p>
+{{/if}}
+
+<hr>
+<a href="/">Volver al inicio</a>

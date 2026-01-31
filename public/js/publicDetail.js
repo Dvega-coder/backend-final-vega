@@ -1,4 +1,4 @@
-// --- public/js/productDetail.js ---
+
 let CART_ID = localStorage.getItem("cartId");
 
 // Crea un carrito si no existe

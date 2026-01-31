@@ -1,76 +1,65 @@
-// src/routes/products.routes.js
 import { Router } from "express";
 import mongoose from "mongoose";
+import passport from "passport";
 import { ProductModel } from "../models/product.model.js";
+import { authorizeRoles } from "../middlewares/authorization.middleware.js";
 
 const productsRouterFactory = (io) => {
   const router = Router();
 
-  // 🟢 GET /api/products → paginación, filtros y orden
+  // =========================
+  // 🟢 GET /api/products (PÚBLICO)
+  // =========================
   router.get("/", async (req, res) => {
     try {
       const { limit = 10, page = 1, sort, query } = req.query;
 
-      // ---------------------------
-      // FILTRO
-      // ---------------------------
       const filter = {};
       if (query) {
-        const [key, rawVal] = String(query).split(":");
-        if (key === "status") filter.status = rawVal === "true";
-        else if (key === "category") filter.category = rawVal;
-        else if (key === "available") filter.stock = { $gt: 0 }; // extra opcional
+        const [key, value] = query.split(":");
+        if (key === "category") filter.category = value;
+        if (key === "status") filter.status = value === "true";
       }
 
-      // ---------------------------
-      // ORDENAMIENTO
-      // ---------------------------
       const sortOpt =
-        sort === "asc" ? { price: 1 } : sort === "desc" ? { price: -1 } : {};
+        sort === "asc" ? { price: 1 } :
+        sort === "desc" ? { price: -1 } :
+        {};
 
-      // ---------------------------
-      // PAGINACIÓN
-      // ---------------------------
-      const lim = Math.max(parseInt(limit, 10) || 10, 1);
-      const pg = Math.max(parseInt(page, 10) || 1, 1);
+      const lim = parseInt(limit);
+      const pg = parseInt(page);
       const skip = (pg - 1) * lim;
 
-      const [items, totalDocs] = await Promise.all([
-        ProductModel.find(filter).sort(sortOpt).skip(skip).limit(lim).lean(),
-        ProductModel.countDocuments(filter),
-      ]);
+      const products = await ProductModel.find(filter)
+        .sort(sortOpt)
+        .skip(skip)
+        .limit(lim)
+        .lean();
 
-      const totalPages = Math.max(Math.ceil(totalDocs / lim), 1);
+      const totalDocs = await ProductModel.countDocuments(filter);
+      const totalPages = Math.ceil(totalDocs / lim);
 
-      const prevPage = pg > 1 ? pg - 1 : null;
-      const nextPage = pg < totalPages ? pg + 1 : null;
-
-      // ---------------------------
-      // RESPUESTA FINAL (Consigna exacta)
-      // ---------------------------
-      return res.json({
+      res.json({
         status: "success",
-        payload: items,
+        payload: products,
         totalPages,
         page: pg,
-        prevPage,
-        nextPage,
-        hasPrevPage: prevPage !== null,
-        hasNextPage: nextPage !== null,
-        prevLink: prevPage
-          ? `/api/products?limit=${lim}&page=${prevPage}&sort=${sort || ""}&query=${query || ""}`
-          : null,
-        nextLink: nextPage
-          ? `/api/products?limit=${lim}&page=${nextPage}&sort=${sort || ""}&query=${query || ""}`
-          : null,
+        hasPrevPage: pg > 1,
+        hasNextPage: pg < totalPages,
+        prevPage: pg > 1 ? pg - 1 : null,
+        nextPage: pg < totalPages ? pg + 1 : null
       });
-    } catch (err) {
-      console.error("GET /api/products error:", err);
-      return res.status(500).json({ status: "error", error: err.message });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        error: error.message
+      });
     }
   });
 
-  // 🟣 GET /api/products/:pid → detalle de producto por ID
+  // =========================
+  // 🟢 GET /api/products/:pid (PÚBLICO)
+  // =========================
   router.get("/:pid", async (req, res) => {
     try {
       const { pid } = req.params;
@@ -78,133 +67,170 @@ const productsRouterFactory = (io) => {
       if (!mongoose.Types.ObjectId.isValid(pid)) {
         return res.status(400).json({
           status: "error",
-          error: "ID de producto inválido",
+          error: "ID inválido"
         });
       }
 
       const product = await ProductModel.findById(pid).lean();
+
       if (!product) {
-        return res
-          .status(404)
-          .json({ status: "error", error: "Producto no encontrado" });
-      }
-
-      return res.json({ status: "success", payload: product });
-    } catch (err) {
-      return res.status(500).json({ status: "error", error: err.message });
-    }
-  });
-
-  // 🟢 POST /api/products → crear nuevo producto
-  router.post("/", async (req, res) => {
-    try {
-      const { title, price, category, description, stock } = req.body;
-
-      if (!title || !price || !category) {
-        return res.status(400).json({
+        return res.status(404).json({
           status: "error",
-          error: "Faltan campos obligatorios: title, price y category",
+          error: "Producto no encontrado"
         });
       }
 
-      const newProduct = await ProductModel.create({
-        title,
-        price,
-        category,
-        description: description || "",
-        stock: stock ?? 0,
-        status: true,
-      });
-
-      // Emitir lista actualizada
-      const updatedList = await ProductModel.find().lean();
-      io.emit("products", updatedList);
-
-      return res.status(201).json({
+      res.json({
         status: "success",
-        message: "Producto creado correctamente",
-        payload: newProduct,
+        payload: product
       });
-    } catch (err) {
-      console.error("POST /api/products error:", err);
-      return res.status(500).json({ status: "error", error: err.message });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        error: error.message
+      });
     }
   });
 
-  // 🔵 PUT /api/products/:pid → actualizar producto
-  router.put("/:pid", async (req, res) => {
-    try {
-      const { pid } = req.params;
+  // =========================
+  // 🔐 POST /api/products (SOLO ADMIN)
+  // =========================
+  router.post(
+    "/",
+    passport.authenticate("jwt", { session: false }),
+    authorizeRoles("admin"),
+    async (req, res) => {
+      try {
+        const { title, price, category, description, stock } = req.body;
 
-      if (!mongoose.Types.ObjectId.isValid(pid)) {
-        return res.status(400).json({
+        if (!title || !price || !category) {
+          return res.status(400).json({
+            status: "error",
+            error: "Faltan campos obligatorios"
+          });
+        }
+
+        const newProduct = await ProductModel.create({
+          title,
+          price,
+          category,
+          description: description || "",
+          stock: stock ?? 0,
+          status: true
+        });
+
+        const updatedProducts = await ProductModel.find().lean();
+        io.emit("products", updatedProducts);
+
+        res.status(201).json({
+          status: "success",
+          payload: newProduct
+        });
+      } catch (error) {
+        res.status(500).json({
           status: "error",
-          error: "ID de producto inválido",
+          error: error.message
         });
       }
-
-      const updateData = req.body;
-
-      const updated = await ProductModel.findByIdAndUpdate(pid, updateData, {
-        new: true,
-      }).lean();
-
-      if (!updated) {
-        return res
-          .status(404)
-          .json({ status: "error", error: "Producto no encontrado" });
-      }
-
-      const updatedList = await ProductModel.find().lean();
-      io.emit("products", updatedList);
-
-      return res.json({
-        status: "success",
-        message: "Producto actualizado correctamente",
-        payload: updated,
-      });
-    } catch (err) {
-      console.error("PUT /api/products/:pid error:", err);
-      return res.status(500).json({ status: "error", error: err.message });
     }
-  });
+  );
 
-  // 🔴 DELETE /api/products/:pid → eliminar producto
-  router.delete("/:pid", async (req, res) => {
-    try {
-      const { pid } = req.params;
+  // =========================
+  // PUT /api/products/:pid (SOLO ADMIN)
+  // =========================
+  router.put(
+    "/:pid",
+    passport.authenticate("jwt", { session: false }),
+    authorizeRoles("admin"),
+    async (req, res) => {
+      try {
+        const { pid } = req.params;
 
-      if (!mongoose.Types.ObjectId.isValid(pid)) {
-        return res.status(400).json({
+        if (!mongoose.Types.ObjectId.isValid(pid)) {
+          return res.status(400).json({
+            status: "error",
+            error: "ID inválido"
+          });
+        }
+
+        const updated = await ProductModel.findByIdAndUpdate(
+          pid,
+          req.body,
+          { new: true }
+        ).lean();
+
+        if (!updated) {
+          return res.status(404).json({
+            status: "error",
+            error: "Producto no encontrado"
+          });
+        }
+
+        const updatedProducts = await ProductModel.find().lean();
+        io.emit("products", updatedProducts);
+
+        res.json({
+          status: "success",
+          payload: updated
+        });
+      } catch (error) {
+        res.status(500).json({
           status: "error",
-          error: "ID de producto inválido",
+          error: error.message
         });
       }
-
-      const deleted = await ProductModel.findByIdAndDelete(pid);
-      if (!deleted) {
-        return res
-          .status(404)
-          .json({ status: "error", error: "Producto no encontrado" });
-      }
-
-      const updatedList = await ProductModel.find().lean();
-      io.emit("products", updatedList);
-
-      return res.json({
-        status: "success",
-        message: "Producto eliminado correctamente",
-      });
-    } catch (err) {
-      console.error("DELETE /api/products/:pid error:", err);
-      return res.status(500).json({ status: "error", error: err.message });
     }
-  });
+  );
+
+  // =========================
+  // 🔐 DELETE /api/products/:pid (SOLO ADMIN)
+  // =========================
+  router.delete(
+    "/:pid",
+    passport.authenticate("jwt", { session: false }),
+    authorizeRoles("admin"),
+    async (req, res) => {
+      try {
+        const { pid } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(pid)) {
+          return res.status(400).json({
+            status: "error",
+            error: "ID inválido"
+          });
+        }
+
+        const deleted = await ProductModel.findByIdAndDelete(pid);
+
+        if (!deleted) {
+          return res.status(404).json({
+            status: "error",
+            error: "Producto no encontrado"
+          });
+        }
+
+        const updatedProducts = await ProductModel.find().lean();
+        io.emit("products", updatedProducts);
+
+        res.json({
+          status: "success",
+          message: "Producto eliminado"
+        });
+      } catch (error) {
+        res.status(500).json({
+          status: "error",
+          error: error.message
+        });
+      }
+    }
+  );
 
   return router;
 };
 
 export default productsRouterFactory;
+
+
 
 
 

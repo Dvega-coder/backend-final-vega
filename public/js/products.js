@@ -1,5 +1,4 @@
-// --- products.js ---
-// Maneja agregar productos al carrito y crea un carrito automáticamente si no existe.
+
 
 let CART_ID = localStorage.getItem("cartId");
 

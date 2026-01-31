@@ -1,8 +1,6 @@
-// --- public/js/cart.js ---
+//
 
-// Obtener ID del carrito desde la URL de forma segura
-let path = window.location.pathname.split("/").filter(Boolean);
-const cartId = path[path.length - 1];
+const cartId = CART_ID;
 
 // 🟢 Actualizar cantidad
 document.querySelectorAll(".update-btn").forEach((btn) => {
@@ -21,13 +19,13 @@ document.querySelectorAll(".update-btn").forEach((btn) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ quantity: qty }),
       });
-      const data = await res.json();
 
+      const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      alert("✅ Cantidad actualizada correctamente.");
+
       location.reload();
     } catch (err) {
-      console.error("Error al actualizar:", err);
+      console.error(err);
       alert("❌ No se pudo actualizar la cantidad.");
     }
   });
@@ -39,19 +37,19 @@ document.querySelectorAll(".remove-btn").forEach((btn) => {
     const row = e.target.closest("tr");
     const productId = row.dataset.id;
 
-    if (!confirm("¿Seguro que querés eliminar este producto?")) return;
+    if (!confirm("¿Eliminar este producto del carrito?")) return;
 
     try {
       const res = await fetch(`/api/carts/${cartId}/products/${productId}`, {
         method: "DELETE",
       });
-      const data = await res.json();
 
+      const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      alert("🗑️ Producto eliminado del carrito.");
+
       location.reload();
     } catch (err) {
-      console.error("Error al eliminar:", err);
+      console.error(err);
       alert("❌ No se pudo eliminar el producto.");
     }
   });
@@ -59,17 +57,19 @@ document.querySelectorAll(".remove-btn").forEach((btn) => {
 
 // ⚫ Vaciar carrito
 document.getElementById("clearCart")?.addEventListener("click", async () => {
-  if (!confirm("¿Seguro que querés vaciar el carrito completo?")) return;
+  if (!confirm("¿Vaciar todo el carrito?")) return;
 
   try {
-    const res = await fetch(`/api/carts/${cartId}`, { method: "DELETE" });
-    const data = await res.json();
+    const res = await fetch(`/api/carts/${cartId}`, {
+      method: "DELETE",
+    });
 
+    const data = await res.json();
     if (!res.ok) throw new Error(data.error);
-    alert("🧹 Carrito vaciado correctamente.");
+
     location.reload();
   } catch (err) {
-    console.error("Error al vaciar carrito:", err);
+    console.error(err);
     alert("❌ No se pudo vaciar el carrito.");
   }
 });

@@ -6,7 +6,7 @@ export default class FileManager {
   constructor(filePath) {
     this.path = path.resolve(filePath);
 
-    // ✅ Si el archivo no existe, lo crea vacío automáticamente
+    
     if (!fs.existsSync(this.path)) {
       fs.mkdirSync(path.dirname(this.path), { recursive: true });
       fs.writeFileSync(this.path, "[]", "utf-8");
@@ -33,7 +33,7 @@ export default class FileManager {
   }
 
   _generateId(items) {
-    // Si tus IDs son numéricos, mantiene esta lógica
+    
     if (items.length === 0) return 1;
 
     const last = items[items.length - 1];

@@ -18,13 +18,15 @@
       <tr data-id="{{this.product._id}}">
         <td>{{this.product.title}}</td>
         <td>${{this.product.price}}</td>
-
         <td>
-          <input type="number" value="{{this.quantity}}" class="quantity-input" min="1" />
+          <input
+            type="number"
+            value="{{this.quantity}}"
+            class="quantity-input"
+            min="1"
+          />
         </td>
-
         <td>${{multiply this.product.price this.quantity}}</td>
-
         <td>
           <button class="update-btn">Actualizar</button>
           <button class="remove-btn">Eliminar</button>
@@ -41,6 +43,11 @@
 {{else}}
 <p>Tu carrito está vacío.</p>
 {{/if}}
+
+<!--  cartId desde session -->
+<script>
+  const CART_ID = "{{cartId}}";
+</script>
 
 <script src="/js/cart.js"></script>
 

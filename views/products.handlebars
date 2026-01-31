@@ -14,12 +14,12 @@
         <p><strong>Stock:</strong> {{this.stock}}</p>
       {{/if}}
 
-      <!-- 🔍 Link a vista detalle -->
+      <!-- Link a vista detalle -->
       <a href="/products/{{this._id}}" class="btn-detail">
         🔎 Ver detalles
       </a>
 
-      <!-- 🔢 Selector de cantidad -->
+      <!-- Selector de cantidad -->
       <div class="qty-box">
         <label for="qty-{{this._id}}">Cantidad:</label>
         <input
@@ -40,7 +40,7 @@
   {{/unless}}
 </section>
 
-<!-- 🔽 Paginación con sort + query preservados -->
+<!-- Paginación con sort + query preservados -->
 <nav class="pagination">
   {{#if hasPrevPage}}
     <a 

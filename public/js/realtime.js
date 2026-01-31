@@ -1,4 +1,4 @@
-// --- public/js/realtime.js ---
+
 const socket = io();
 const productForm = document.getElementById("productForm");
 const productList = document.getElementById("productList");
